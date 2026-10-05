@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sayelf YouTube Workflow：面向普通创作者的本地离线 YouTube 创作与复盘工作台。">
+  <title>Sayelf YouTube 创作工作台</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #647384;
+      --paper: #f7f8fa;
+      --card: #ffffff;
+      --line: #e4e8ed;
+      --blue: #1769e0;
+      --blue-soft: #edf4ff;
+      --mint: #e8f6f0;
+      --mint-ink: #0d7651;
+      --amber: #fff5dc;
+      --amber-ink: #8a5b00;
+      --rose: #fff0f0;
+      --rose-ink: #a52b2b;
+      --focus: #8db6f1;
+      --shadow: 0 18px 55px rgba(25, 45, 72, .08);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { min-width: 320px; margin: 0; color: var(--ink); background: radial-gradient(circle at 8% -10%, #eaf2ff 0, transparent 34%), var(--paper); }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 5vw; border-bottom: 1px solid rgba(228,232,237,.8); background: rgba(255,255,255,.84); backdrop-filter: blur(14px); position: sticky; top: 0; z-index: 5; }
+    .brand { display: flex; gap: 12px; align-items: center; font-weight: 760; letter-spacing: -.02em; }
+    .brand-mark { width: 42px; height: 42px; display: block; flex: 0 0 auto; overflow: hidden; border: 2px solid rgba(30,42,28,.55); border-radius: 50%; background: #080907; box-shadow: 0 7px 16px rgba(25,45,30,.2); }
+    .brand-logo { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .local-pill { color: var(--mint-ink); background: var(--mint); border: 1px solid #cbeadf; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: 700; }
+    .language-toggle { border: 1px solid #c9d8ec; border-radius: 999px; padding: 7px 12px; color: #315e9d; background: #fff; font-size: 12px; font-weight: 760; }
+    .language-toggle:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+    main { width: min(1180px, 90vw); margin: 0 auto; padding: 52px 0 66px; }
+    .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 32px; align-items: end; margin-bottom: 32px; }
+    .eyebrow { color: var(--blue); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 10px 0 14px; font-size: clamp(34px, 5vw, 62px); line-height: 1.03; letter-spacing: -.065em; max-width: 700px; }
+    .hero p { max-width: 650px; color: var(--muted); font-size: 17px; line-height: 1.75; margin: 0; }
+    .hero-note { padding: 20px; border: 1px solid var(--line); border-radius: 22px; background: rgba(255,255,255,.7); box-shadow: var(--shadow); }
+    .hero-note strong { display: block; margin-bottom: 8px; font-size: 14px; }
+    .hero-note span { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .workspace { display: grid; grid-template-columns: 330px minmax(0,1fr); gap: 20px; align-items: start; }
+    .workspace > aside.panel { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: 92px; }
+    .workspace > .form-panel, .workspace > .result-panel { grid-column: 2; }
+    .panel { border: 1px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: var(--shadow); }
+    .panel-head { padding: 23px 24px 14px; }
+    .panel-head h2 { margin: 0 0 7px; font-size: 18px; letter-spacing: -.02em; }
+    .panel-head p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .actions { display: grid; gap: 8px; padding: 8px 14px 18px; }
+    .mode-button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 62px; padding: 11px 12px; border: 1px solid transparent; border-radius: 15px; color: var(--ink); text-align: left; background: transparent; transition: transform .18s ease, background .18s ease, border-color .18s ease; }
+    .mode-button:hover { transform: translateY(-1px); background: #f6f8fb; }
+    .mode-button.active { color: var(--blue); border-color: #cfe0fb; background: var(--blue-soft); }
+    .mode-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 11px; background: #f1f4f8; font-size: 17px; }
+    .active .mode-icon { background: #dbeaff; }
+    .mode-copy strong { display: block; font-size: 14px; }
+    .mode-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .active .mode-copy span { color: #5077ad; }
+    .form-panel { padding-bottom: 24px; }
+    form { padding: 0 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .field { display: grid; gap: 7px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 720; }
+    .optional { color: var(--muted); font-weight: 500; }
+    input, textarea, select { width: 100%; border: 1px solid var(--line); border-radius: 13px; padding: 12px 13px; outline: none; color: var(--ink); background: #fbfcfd; transition: .18s ease; }
+    textarea { min-height: 112px; resize: vertical; line-height: 1.55; }
+    input:focus, textarea:focus, select:focus { border-color: var(--focus); box-shadow: 0 0 0 4px #edf4ff; background: #fff; }
+    .form-foot { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+    .primary { border: 0; border-radius: 13px; padding: 12px 18px; color: #fff; background: var(--blue); font-weight: 760; box-shadow: 0 9px 18px rgba(23,105,224,.2); }
+    .primary:hover { background: #0e57bd; }
+    .hint { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .result-panel { min-height: 610px; overflow: hidden; scroll-margin-top: 92px; }
+    .result-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 23px 26px 19px; border-bottom: 1px solid var(--line); }
+    .result-top h2 { margin: 0 0 6px; font-size: 18px; }
+    .result-top p { margin: 0; color: var(--muted); font-size: 13px; }
+    .status { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 999px; color: var(--mint-ink); background: var(--mint); font-size: 12px; font-weight: 760; white-space: nowrap; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2caf7d; }
+    .result-body { padding: 26px; }
+    .empty { display: grid; place-items: center; min-height: 490px; padding: 42px; color: var(--muted); text-align: center; }
+    .empty-art { width: 76px; height: 76px; display: grid; place-items: center; margin-bottom: 20px; border-radius: 24px; color: var(--blue); background: var(--blue-soft); font-size: 32px; }
+    .empty h3 { margin: 0 0 9px; color: var(--ink); font-size: 20px; }
+    .empty p { max-width: 350px; margin: 0; line-height: 1.65; font-size: 13px; }
+    .result-intro { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 21px; }
+    .result-intro h3 { margin: 0 0 7px; font-size: 23px; letter-spacing: -.035em; }
+    .result-intro p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .copy-btn { padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; color: var(--muted); background: #fff; font-size: 12px; white-space: nowrap; }
+    .copy-btn:hover { border-color: #a6c4ee; color: var(--blue); }
+    .result-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .result-card { padding: 17px; border: 1px solid var(--line); border-radius: 17px; background: #fcfdff; }
+    .result-card.wide { grid-column: 1 / -1; }
+    .result-card h4 { margin: 0 0 11px; font-size: 13px; }
+    .result-card p, .result-card li { color: #4e5e6f; font-size: 13px; line-height: 1.7; }
+    .result-card p { margin: 0; }
+    .result-card ul { margin: 0; padding-left: 18px; }
+    .idea-line { color: var(--ink); font-size: 16px !important; font-weight: 740; letter-spacing: -.02em; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+    .tag { display: inline-flex; padding: 5px 8px; border-radius: 8px; color: #566575; background: #eef2f6; font-size: 11px; font-weight: 700; }
+    .tag.fact { color: var(--mint-ink); background: var(--mint); }
+    .tag.inference { color: #315e9d; background: #eaf2ff; }
+    .tag.hypothesis { color: var(--amber-ink); background: var(--amber); }
+    .tag.unknown { color: var(--rose-ink); background: var(--rose); }
+    .action-card { display: flex; gap: 12px; align-items: start; padding: 15px; border: 1px solid #cfe0fb; border-radius: 15px; background: var(--blue-soft); }
+    .action-card strong { display: block; margin-bottom: 4px; color: #174b91; font-size: 12px; }
+    .action-card span { color: #506a89; font-size: 13px; line-height: 1.55; }
+    .action-arrow { color: var(--blue); font-size: 19px; line-height: 1; }
+    .storyboard-card { border-color: #cfe0fb; background: linear-gradient(135deg, #f8fbff, #f0f6ff); }
+    .storyboard-head { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+    .storyboard-head h4 { margin-bottom: 6px; }
+    .storyboard-head p { margin: 0; max-width: 570px; }
+    .download-btn { flex: 0 0 auto; border: 1px solid #a9c8f5; border-radius: 10px; padding: 9px 12px; color: #1457ad; background: #fff; font-size: 12px; font-weight: 760; }
+    .download-btn:hover { border-color: var(--blue); background: #f8fbff; }
+    .download-note { display: block; margin-top: 12px; color: #6681a5; font-size: 11px; }
+    .footer { margin-top: 23px; color: var(--muted); font-size: 11px; text-align: center; }
+    @media (max-width: 850px) { .hero { grid-template-columns: 1fr; gap: 20px; } .workspace { grid-template-columns: 1fr; } .workspace > aside.panel, .workspace > .form-panel, .workspace > .result-panel { grid-column: 1; grid-row: auto; position: static; } .result-panel { min-height: 0; } }
+    @media (max-width: 560px) { main { width: min(92vw, 1180px); padding-top: 34px; } .topbar { align-items: flex-start; padding: 12px 4vw; } .brand { font-size: 14px; } .top-actions { flex-wrap: wrap; justify-content: flex-end; } .local-pill { font-size: 10px; } .hero p { font-size: 15px; } .form-grid, .result-grid { grid-template-columns: 1fr; } .field.full, .result-card.wide { grid-column: auto; } .result-top, .result-intro { align-items: start; flex-direction: column; } .result-body, form { padding-left: 18px; padding-right: 18px; } .form-foot { align-items: stretch; flex-direction: column; } .primary { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark"><img class="brand-logo" src="assets/sayelf-logo.png" alt="SAYELF 山野精灵"></span><span id="brandName">Sayelf YouTube 工作台</span></div>
+    <div class="top-actions"><div class="local-pill" id="localPill">本地运行 · 不上传内容</div><button class="language-toggle" id="languageToggle" type="button">English</button></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow" id="heroEyebrow">YouTube Workflow · v0.1</div>
+        <h1 id="heroTitle">把下一条视频，想得更清楚。</h1>
+        <p id="heroIntro">从一个想法开始，得到一份能执行、能检查、能复盘的工作草案。你不需要懂算法，只需要告诉我你想做什么。</p>
+      </div>
+      <div class="hero-note"><strong id="heroNoteTitle">这里保留创作者的判断</strong><span id="heroNoteBody">工作台会整理证据、指出未知和风险，并给出下一步。最终发布、版权确认和关键方向选择，仍由你决定。</span></div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel">
+        <div class="panel-head"><h2 id="entryTitle">你想做什么？</h2><p id="entrySubtitle">选择一个入口，填入你手头的信息。</p></div>
+        <nav class="actions" id="modeNav" aria-label="YouTube 工作入口">
+          <button class="mode-button active" data-mode="new" type="button"><span class="mode-icon">✦</span><span class="mode-copy"><strong>创作新视频</strong><span>从想法到完整创作方案</span></span></button>
+          <button class="mode-button" data-mode="short" type="button"><span class="mode-icon">▣</span><span class="mode-copy"><strong>创作 Shorts</strong><span>快速钩子与紧凑兑现</span></span></button>
+          <button class="mode-button" data-mode="video" type="button"><span class="mode-icon">◉</span><span class="mode-copy"><strong>分析已有视频</strong><span>看清发生了什么</span></span></button>
+          <button class="mode-button" data-mode="packaging" type="button"><span class="mode-icon">⌁</span><span class="mode-copy"><strong>优化标题封面</strong><span>让承诺更清楚、更一致</span></span></button>
+          <button class="mode-button" data-mode="channel" type="button"><span class="mode-icon">⌂</span><span class="mode-copy"><strong>分析频道</strong><span>找出可持续的方向</span></span></button>
+          <button class="mode-button" data-mode="next" type="button"><span class="mode-icon">↗</span><span class="mode-copy"><strong>规划下一条视频</strong><span>只选一个值得验证的动作</span></span></button>
+        </nav>
+      </aside>
+
+      <section class="panel form-panel">
+        <div class="panel-head"><h2 id="formTitle">先说说你想做什么</h2><p id="formSubtitle">不用一次想完整，未知的地方可以留空。</p></div>
+        <form id="creatorForm">
+          <div id="formFields"></div>
+          <div class="form-foot"><button class="primary" id="submitButton" type="submit">生成工作草案</button><span class="hint" id="localHint">草稿只保存在这台设备的浏览器中。</span></div>
+        </form>
+      </section>
+
+      <section class="panel result-panel" aria-live="polite">
+        <div class="result-top"><div><h2 id="resultTitle">你的工作草案</h2><p id="resultSubtitle">完成左侧输入后，这里会出现结果。</p></div><span class="status" id="status">等待输入</span></div>
+        <div class="result-body" id="resultBody">
+          <div class="empty"><div class="empty-art">✦</div><div><h3 id="emptyTitle">从一个小线索开始</h3><p id="emptyBody">主题、素材、数据都可以。工作台会把它整理成清楚的下一步。</p></div></div>
+        </div>
+      </section>
+    </section>
+    <div class="footer" id="footerText">Sayelf YouTube Workflow · 离线体验版 · 规则与最终发布决定请以 YouTube 官方页面和 Studio 为准</div>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+      // Shared Motion Layer: GSAP is optional and injected by the host when needed.
+      // The offline artifact remains fully usable without a network or GSAP bundle.
+      const MotionLayer = window.SayelfMotion || (function () {
+        function engine() { return window.gsap || null; }
+        function reducedMotion() { return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); }
+        function available() { return !!engine() && !reducedMotion(); }
+        function reveal(target, vars) {
+          const gsap = engine();
+          if (!gsap || reducedMotion() || !target) return null;
+          return gsap.fromTo(target, {autoAlpha: 0, y: 10}, Object.assign({duration: .36, ease: "power2.out"}, vars || {}));
+        }
+        function to(target, vars) {
+          const gsap = engine();
+          if (!gsap || reducedMotion() || !target) return null;
+          return gsap.to(target, vars || {});
+        }
+        function timeline(vars) {
+          const gsap = engine();
+          if (!gsap || reducedMotion()) return null;
+          return gsap.timeline(vars || {});
+        }
+        return Object.freeze({available, reducedMotion, reveal, to, timeline});
+      }());
+      window.SayelfMotion = MotionLayer;
+      const modes = {
+        new: {
+          title: "先说说你想做什么",
+          subtitle: "不用一次想完整，未知的地方可以留空。",
+          result: "一份从观众到发布前检查的创作方案。",
+          fields: [
+            ["topic", "你想拍什么？", "例如：我想记录一个正在消失的日本乡村市场", true, "textarea"],
+            ["audience", "你希望谁看？", "例如：喜欢慢旅行、在意真实生活的人", false, "input"],
+            ["materials", "你手上有什么素材？", "文章、采访、拍摄计划、已有视频……", false, "textarea"],
+            ["goal", "你希望观众看完得到什么？", "例如：理解它为什么还值得被看见", false, "textarea"]
+          ]
+        },
+        short: {
+          title: "为一个 Shorts 找到最短路径",
+          subtitle: "Shorts 不是把长视频随便剪短，先说清楚最想让人看到的瞬间。",
+          result: "一份紧凑的 Shorts 钩子、节奏与兑现方案。",
+          fields: [
+            ["topic", "这一条想让人看到什么？", "例如：老人用 30 秒做出当地传统点心", true, "textarea"],
+            ["moment", "最有画面的瞬间是什么？", "一个动作、反差、结果或现场声音", false, "textarea"],
+            ["source", "素材从哪里来？", "自己拍摄、已有长视频、采访、资料……", false, "textarea"],
+            ["payoff", "看完希望观众记住什么？", "一句话即可", false, "input"]
+          ]
+        },
+        video: {
+          title: "把数据变成下一步",
+          subtitle: "有多少数据就写多少，不足的部分会被标记为待验证。",
+          result: "一份先读事实、再提出假设的诊断草案。",
+          fields: [
+            ["url", "视频链接", "可选：粘贴 YouTube 链接", false, "input"],
+            ["metrics", "你看到的表现数据", "例如：曝光 12,000；CTR 3.2%；平均观看 2:14；前 30 秒留存 58%", true, "textarea"],
+            ["feeling", "你自己觉得哪里不对？", "可选：例如“点击有，但看不完”", false, "textarea"]
+          ]
+        },
+        packaging: {
+          title: "让标题和封面说同一件事",
+          subtitle: "标题补充语义，封面制造视觉问题，二者共同建立观看预期。",
+          result: "三组标题 × 封面方向，以及承诺一致性检查。",
+          fields: [
+            ["promise", "这条视频真正要兑现什么？", "一句话写出观众看完会得到的价值", true, "textarea"],
+            ["title", "现在的标题", "可选：如果已有标题就贴在这里", false, "input"],
+            ["thumbnail", "现在的封面想法", "可选：主体、动作、文字、色彩", false, "textarea"],
+            ["audience", "你最希望谁点开？", "例如：第一次来日本旅行的人", false, "input"]
+          ]
+        },
+        channel: {
+          title: "看清频道正在形成什么",
+          subtitle: "不追求一个漂亮分数，只找出观众已经回应的东西。",
+          result: "一份频道模式、证据缺口与下一步建议。",
+          fields: [
+            ["niche", "频道主要做什么？", "例如：记录地方小店与手艺人的真实故事", true, "textarea"],
+            ["recent", "最近几条视频的表现", "主题 + 播放/曝光/CTR/留存，知道多少写多少", true, "textarea"],
+            ["audience", "你觉得观众为什么关注？", "可选：来自评论、私信或你的观察", false, "textarea"]
+          ]
+        },
+        next: {
+          title: "为下一条只选一个动作",
+          subtitle: "好的复盘不是列十条建议，而是选择一个值得验证的改变。",
+          result: "KEEP / CHANGE / TEST / 下一条视频的简明计划。",
+          fields: [
+            ["keep", "上一条什么做对了？", "例如：真实采访让评论很多", false, "textarea"],
+            ["change", "上一条哪里最需要改？", "例如：开头铺垫太久", false, "textarea"],
+            ["idea", "你考虑中的下一条想法", "可以有多个，先全部写下", true, "textarea"],
+            ["constraint", "这次有什么限制？", "时间、预算、素材、拍摄地点……", false, "input"]
+          ]
+        }
+      };
+
+      const englishModes = {
+        new: {
+          title: "Tell us what you want to make",
+          subtitle: "You do not need the whole idea yet. Leave unknown parts blank.",
+          result: "A creation plan from audience to pre-publish review.",
+          fields: [
+            ["topic", "What do you want to film?", "Example: I want to document a disappearing market in rural Japan", true, "textarea"],
+            ["audience", "Who should watch?", "Example: people who enjoy slow travel and real everyday life", false, "input"],
+            ["materials", "What materials do you have?", "Article, interview, shooting plan, existing video...", false, "textarea"],
+            ["goal", "What should viewers get?", "Example: understand why this place still matters", false, "textarea"]
+          ]
+        },
+        short: {
+          title: "Find the shortest path for a Short",
+          subtitle: "A Short is not simply a shortened long video. Start with the moment people should see.",
+          result: "A compact hook, pacing, and payoff plan for a Short.",
+          fields: [
+            ["topic", "What should this Short show?", "Example: an elder makes a local traditional snack in 30 seconds", true, "textarea"],
+            ["moment", "What is the most visual moment?", "An action, contrast, result, or live sound", false, "textarea"],
+            ["source", "Where will the material come from?", "Your footage, an existing long video, interview, reference...", false, "textarea"],
+            ["payoff", "What should viewers remember?", "One sentence is enough", false, "input"]
+          ]
+        },
+        video: {
+          title: "Turn data into a next step",
+          subtitle: "Enter what you have. Missing pieces will stay marked for review.",
+          result: "A diagnosis draft that reads facts before proposing hypotheses.",
+          fields: [
+            ["url", "Video link", "Optional: paste a YouTube link", false, "input"],
+            ["metrics", "What performance data do you see?", "Example: 12,000 impressions; CTR 3.2%; average view 2:14; 30-second retention 58%", true, "textarea"],
+            ["feeling", "What feels off to you?", "Optional: e.g. people click but do not stay", false, "textarea"]
+          ]
+        },
+        packaging: {
+          title: "Make the title and thumbnail say the same thing",
+          subtitle: "The title adds meaning; the thumbnail creates a visual question; together they set expectations.",
+          result: "Three title × thumbnail directions with a promise consistency check.",
+          fields: [
+            ["promise", "What will this video truly deliver?", "Write the value viewers will receive in one sentence", true, "textarea"],
+            ["title", "Current title", "Optional: paste the current title", false, "input"],
+            ["thumbnail", "Current thumbnail idea", "Optional: subject, action, text, colors", false, "textarea"],
+            ["audience", "Who do you most want to click?", "Example: first-time visitors to Japan", false, "input"]
+          ]
+        },
+        channel: {
+          title: "See what your channel is becoming",
+          subtitle: "Do not chase a pretty score. Find what viewers have already responded to.",
+          result: "A channel pattern, evidence gaps, and next-step recommendation.",
+          fields: [
+            ["niche", "What does the channel make?", "Example: real stories from local shops and craftspeople", true, "textarea"],
+            ["recent", "How did recent videos perform?", "Topic + views/impressions/CTR/retention; enter what you know", true, "textarea"],
+            ["audience", "Why do you think viewers follow?", "Optional: comments, messages, or your observation", false, "textarea"]
+          ]
+        },
+        next: {
+          title: "Choose one action for the next video",
+          subtitle: "A good review does not list ten tips. It chooses one change worth testing.",
+          result: "A concise KEEP / CHANGE / TEST / NEXT VIDEO plan.",
+          fields: [
+            ["keep", "What worked last time?", "Example: real interviews brought thoughtful comments", false, "textarea"],
+            ["change", "What most needs to change?", "Example: the opening took too long", false, "textarea"],
+            ["idea", "What next-video ideas are you considering?", "Write them all down first", true, "textarea"],
+            ["constraint", "What constraints do you have?", "Time, budget, material, location...", false, "input"]
+          ]
+        }
+      };
+
+      const pageCopy = {
+        zh: {
+          title: "Sayelf YouTube 创作工作台", description: "Sayelf YouTube Workflow：面向普通创作者的本地离线 YouTube 创作与复盘工作台。",
+          brand: "Sayelf YouTube 工作台", local: "本地运行 · 不上传内容", switchTo: "English",
+          heroEyebrow: "YouTube Workflow · v0.1", heroTitle: "把下一条视频，想得更清楚。",
+          heroIntro: "从一个想法开始，得到一份能执行、能检查、能复盘的工作草案。你不需要懂算法，只需要告诉我你想做什么。",
+          noteTitle: "这里保留创作者的判断", noteBody: "工作台会整理证据、指出未知和风险，并给出下一步。最终发布、版权确认和关键方向选择，仍由你决定。",
+          entryTitle: "你想做什么？", entrySubtitle: "选择一个入口，填入你手头的信息。", submit: "生成工作草案", localHint: "草稿只保存在这台设备的浏览器中。",
+          resultTitle: "你的工作草案", resultEmpty: "完成左侧输入后，这里会出现结果。", waiting: "等待输入", ready: "草案已生成",
+          emptyTitle: "从一个小线索开始", emptyBody: "主题、素材、数据都可以。工作台会把它整理成清楚的下一步。",
+          footer: "Sayelf YouTube Workflow · 离线体验版 · 规则与最终发布决定请以 YouTube 官方页面和 Studio 为准",
+          copy: "复制这份草案", copied: "已复制", downloaded: "已下载", download: "下载 .txt", optional: "（可选）", navLabel: "YouTube 工作入口"
+        },
+        en: {
+          title: "Sayelf YouTube Studio", description: "Sayelf YouTube Workflow: an offline creation and review studio for everyday creators.",
+          brand: "Sayelf YouTube Studio", local: "Local · No uploads", switchTo: "中文",
+          heroEyebrow: "YouTube Workflow · v0.1", heroTitle: "Make the next video clearer.",
+          heroIntro: "Start with an idea and get a plan you can make, check, and learn from. You do not need to understand the algorithm.",
+          noteTitle: "Your judgment stays in the loop", noteBody: "The studio organizes evidence, flags unknowns and risks, and suggests the next step. You still decide on publishing, rights, and major direction changes.",
+          entryTitle: "What do you want to do?", entrySubtitle: "Choose a path and enter what you already have.", submit: "Generate working draft", localHint: "Drafts stay in this browser on this device.",
+          resultTitle: "Your working draft", resultEmpty: "Your result will appear here after you complete the input.", waiting: "Waiting for input", ready: "Draft ready",
+          emptyTitle: "Start with one small clue", emptyBody: "A topic, a piece of material, or some data is enough. The studio will turn it into a clear next step.",
+          footer: "Sayelf YouTube Workflow · Offline preview · Confirm current rules and final publishing decisions in YouTube Help and Studio",
+          copy: "Copy draft", copied: "Copied", downloaded: "Downloaded", download: "Download .txt", optional: " (optional)", navLabel: "YouTube workflow paths"
+        }
+      };
+
+      const buttonCopy = {
+        new: {zh:["创作新视频","从想法到完整创作方案"], en:["Create a new video","From idea to a complete plan"]},
+        short: {zh:["创作 Shorts","快速钩子与紧凑兑现"], en:["Create a Short","Immediate hook and compact payoff"]},
+        video: {zh:["分析已有视频","看清发生了什么"], en:["Analyze a video","See what happened"]},
+        packaging: {zh:["优化标题封面","让承诺更清楚、更一致"], en:["Optimize title & thumbnail","Make the promise clearer and aligned"]},
+        channel: {zh:["分析频道","找出可持续的方向"], en:["Analyze a channel","Find a sustainable direction"]},
+        next: {zh:["规划下一条视频","只选一个值得验证的动作"], en:["Plan the next video","Choose one action worth testing"]}
+      };
+
+      let currentMode = "new";
+      let language = "zh";
+      let lastResultText = "";
+      let lastData = null;
+      const formFields = document.getElementById("formFields");
+      const form = document.getElementById("creatorForm");
+      const resultBody = document.getElementById("resultBody");
+      const formTitle = document.getElementById("formTitle");
+      const formSubtitle = document.getElementById("formSubtitle");
+      const resultSubtitle = document.getElementById("resultSubtitle");
+      const status = document.getElementById("status");
+      const languageToggle = document.getElementById("languageToggle");
+      const submitButton = document.getElementById("submitButton");
+      const localHint = document.getElementById("localHint");
+      const RUN_LEDGER_KEY = "sayelf-youtube-run-ledger";
+      let activeRun = null;
+
+      function esc(value) {
+        return String(value || "").replace(/[&<>\"']/g, function (char) {
+          return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[char];
+        });
+      }
+      function val(data, key, fallback) { return data[key] && data[key].trim() ? data[key].trim() : fallback; }
+      function fieldHTML(field) {
+        const [name, label, placeholder, required, type] = field;
+        const tag = type === "textarea" ? "textarea" : "input";
+        const req = required ? " required" : "";
+        const optional = required ? "" : ` <span class="optional">${pageCopy[language].optional}</span>`;
+        const control = tag === "textarea" ? `<textarea id="${name}" name="${name}" placeholder="${placeholder}"${req}></textarea>` : `<input id="${name}" name="${name}" placeholder="${placeholder}"${req}>`;
+        return `<div class="field${type === "textarea" ? " full" : ""}"><label for="${name}">${label}${optional}</label>${control}</div>`;
+      }
+      function loadDraft() {
+        try { return JSON.parse(localStorage.getItem("sayelf-youtube-drafts") || "{}"); } catch (e) { return {}; }
+      }
+      function saveDraft(data) {
+        try { const drafts = loadDraft(); drafts[currentMode] = data; localStorage.setItem("sayelf-youtube-drafts", JSON.stringify(drafts)); return true; } catch (e) { return false; }
+      }
+      function loadRunLedger() {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(RUN_LEDGER_KEY) || '{"schema_version":"0.1","runs":[]}');
+          if (!parsed || parsed.schema_version !== "0.1" || !Array.isArray(parsed.runs)) throw new Error("invalid run ledger");
+          return parsed;
+        } catch (e) {
+          return {schema_version: "0.1", runs: []};
+        }
+      }
+      function saveRunLedger(ledger) {
+        try { localStorage.setItem(RUN_LEDGER_KEY, JSON.stringify(ledger)); } catch (e) {}
+      }
+      function runNow() { return new Date().toISOString(); }
+      function deriveRunStatus(events) {
+        for (let i = events.length - 1; i >= 0; i -= 1) {
+          if (events[i].status) return events[i].status;
+        }
+        return "READY";
+      }
+      function evidenceKeys(data) {
+        return Object.keys(data || {}).filter(function (key) { return String(data[key] || "").trim(); }).map(function (key) { return "field:" + key; });
+      }
+      function appendRunEvent(type, details) {
+        if (!activeRun) return;
+        const info = details || {};
+        activeRun.events.push({
+          event_id: "evt-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7),
+          type: type,
+          at: runNow(),
+          status: info.status || null,
+          evidence: Array.isArray(info.evidence) ? info.evidence : [],
+          result_version: activeRun.result_version,
+          follow_up: info.follow_up || activeRun.follow_up || "NOT_CREATED"
+        });
+        activeRun.status = deriveRunStatus(activeRun.events);
+        activeRun.next_action = info.next_action || activeRun.next_action || "review_result";
+        activeRun.updated_at = runNow();
+        const ledger = loadRunLedger();
+        const index = ledger.runs.findIndex(function (run) { return run.run_id === activeRun.run_id; });
+        if (index >= 0) ledger.runs[index] = activeRun;
+        else ledger.runs.push(activeRun);
+        ledger.runs = ledger.runs.slice(-20);
+        saveRunLedger(ledger);
+        document.body.dataset.runStatus = activeRun.status;
+        document.body.dataset.runId = activeRun.run_id;
+      }
+      function startRun(mode) {
+        activeRun = {
+          schema_version: "0.1",
+          run_id: "yt-run-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7),
+          mode: mode,
+          status: "READY",
+          result_version: 0,
+          follow_up: "NOT_CREATED",
+          next_action: "enter_fields",
+          created_at: runNow(),
+          updated_at: runNow(),
+          events: []
+        };
+        appendRunEvent("RUN_CREATED", {status: "READY", evidence: ["mode:" + mode], next_action: "route_entry"});
+        appendRunEvent("ROUTED", {status: "READY", evidence: ["route:" + mode], next_action: "enter_fields"});
+      }
+      function readFormData() {
+        try { return Object.fromEntries(new FormData(form).entries()); } catch (e) { return {}; }
+      }
+      function setLanguage(nextLanguage) {
+        language = nextLanguage;
+        const copy = pageCopy[language];
+        document.documentElement.lang = language === "en" ? "en" : "zh-CN";
+        document.title = copy.title;
+        document.querySelector('meta[name="description"]').setAttribute("content", copy.description);
+        document.getElementById("brandName").textContent = copy.brand;
+        document.getElementById("localPill").textContent = copy.local;
+        languageToggle.textContent = copy.switchTo;
+        document.getElementById("heroEyebrow").textContent = copy.heroEyebrow;
+        document.getElementById("heroTitle").textContent = copy.heroTitle;
+        document.getElementById("heroIntro").textContent = copy.heroIntro;
+        document.getElementById("heroNoteTitle").textContent = copy.noteTitle;
+        document.getElementById("heroNoteBody").textContent = copy.noteBody;
+        document.getElementById("entryTitle").textContent = copy.entryTitle;
+        document.getElementById("entrySubtitle").textContent = copy.entrySubtitle;
+        document.getElementById("modeNav").setAttribute("aria-label", copy.navLabel);
+        document.getElementById("submitButton").textContent = copy.submit;
+        document.getElementById("localHint").textContent = copy.localHint;
+        document.getElementById("resultTitle").textContent = copy.resultTitle;
+        const emptyTitle = document.getElementById("emptyTitle");
+        const emptyBody = document.getElementById("emptyBody");
+        if (emptyTitle) emptyTitle.textContent = copy.emptyTitle;
+        if (emptyBody) emptyBody.textContent = copy.emptyBody;
+        document.getElementById("footerText").textContent = copy.footer;
+        document.querySelectorAll(".mode-button").forEach(function (button) {
+          const labels = buttonCopy[button.dataset.mode][language];
+          button.querySelector(".mode-copy strong").textContent = labels[0];
+          button.querySelector(".mode-copy span").textContent = labels[1];
+        });
+      }
+      function setMode(mode, preserved, options) {
+        currentMode = mode;
+        if (!options || options.startRun !== false) startRun(mode);
+        const meta = (language === "en" ? englishModes : modes)[mode];
+        document.querySelectorAll(".mode-button").forEach(function (button) { button.classList.toggle("active", button.dataset.mode === mode); });
+        formTitle.textContent = meta.title;
+        formSubtitle.textContent = meta.subtitle;
+        resultSubtitle.textContent = meta.result;
+        formFields.innerHTML = `<div class="form-grid">${meta.fields.map(fieldHTML).join("")}</div>`;
+        const draft = preserved || loadDraft()[mode] || {};
+        Object.keys(draft).forEach(function (key) { const el = document.getElementById(key); if (el) el.value = draft[key]; });
+        status.textContent = pageCopy[language].waiting;
+        status.style.color = "var(--mint-ink)";
+        status.style.background = "var(--mint)";
+        resetResult();
+      }
+      function resetResult() {
+        resultBody.innerHTML = `<div class="empty"><div class="empty-art">✦</div><div><h3 id="emptyTitle">${pageCopy[language].emptyTitle}</h3><p id="emptyBody">${pageCopy[language].emptyBody}</p></div></div>`;
+        status.textContent = pageCopy[language].waiting;
+        lastResultText = "";
+      }
+      function tags(items) { return `<div class="tag-row">${items.map(function (item) { return `<span class="tag ${item[1] || ""}">${item[0]}</span>`; }).join("")}</div>`; }
+      function card(title, body, extra) { return `<article class="result-card${extra ? " " + extra : ""}"><h4>${title}</h4>${body}</article>`; }
+      function action(text) { return `<div class="action-card wide"><span class="action-arrow">→</span><div><strong>${language === "en" ? "Next step" : "下一步"}</strong><span>${text}</span></div></div>`; }
+      function commonIntro(title, desc) { return `<div class="result-intro"><div><h3>${title}</h3><p>${desc}</p></div><button class="copy-btn" type="button" id="copyResult">${pageCopy[language].copy}</button></div>`; }
+      function storyboardCard(mode) {
+        const label = language === "en" ? (mode === "short" ? "Shorts storyboard Prompt" : mode === "next" ? "Next-video storyboard Prompt" : "Video storyboard Prompt") : (mode === "short" ? "Shorts 视频分镜 Prompt" : mode === "next" ? "下一条视频分镜 Prompt" : "视频分镜 Prompt");
+        const note = language === "en" ? (mode === "short" ? "Built for a vertical Short with an immediate hook, action progression, and compact payoff." : "Built around shot purpose, visual action, sound, and promise delivery; provider-independent.") : (mode === "short" ? "按竖屏 Shorts 的即时钩子、动作推进与紧凑兑现生成。" : "按镜头目的、画面动作、声音和承诺兑现生成，保持 Provider 独立。");
+        const downloadNote = language === "en" ? "Plain text for any video tool or a human shoot plan." : "纯文本文件，可继续交给你选择的视频制作工具或人工拍摄。";
+        return `<article class="result-card wide storyboard-card"><div class="storyboard-head"><div><h4>${label}</h4><p>${note}</p></div><button class="download-btn" type="button" id="downloadStoryboard">${pageCopy[language].download}</button></div><span class="download-note">${downloadNote}</span></article>`;
+      }
+      function buildStoryboardPrompt(mode, data) {
+        const isShort = mode === "short";
+        const topic = val(data, "topic", val(data, "idea", language === "en" ? "Next YouTube video" : "下一条 YouTube 视频"));
+        const audience = val(data, "audience", language === "en" ? "viewers who genuinely care about this topic" : "对这个主题真正感兴趣的观众");
+        const payoff = val(data, "goal", val(data, "payoff", language === "en" ? "one specific, credible, memorable takeaway" : "一个具体、可信、可记住的收获"));
+        const materials = val(data, "materials", val(data, "source", language === "en" ? "Use the creator's supplied material as the source of truth" : "以创作者提供的真实素材为准"));
+        const moment = val(data, "moment", language === "en" ? "Use one concrete action, result, or live detail as the visual anchor" : "用一个具体动作、结果或现场细节作为视觉锚点");
+        if (language === "en") {
+          return [
+            "YouTube Storyboard Prompt",
+            "",
+            `Format: ${isShort ? "vertical Shorts" : "horizontal long-form"}`,
+            `Topic: ${topic}`,
+            `Target audience: ${audience}`,
+            `Viewer takeaway: ${payoff}`,
+            `Source material: ${materials}`,
+            "",
+            "Creative direction:",
+            isShort ? "Design 4–6 vertical shots for approximately 20–45 seconds. Show a result, contrast, or the most visual action in the first second. Every shot should move the event forward; avoid intros, vague setup, and meaningless transitions." : "Design 8–10 shots. Deliver the expectation created by the title and thumbnail through a real scene or result first, add only necessary context, then progress through connected actions and details before landing on a concrete payoff.",
+            `Visual anchor: ${moment}`,
+            "Keep people, place, time, props, and lighting consistent. Let visuals serve the content; do not invent exaggerated details that conflict with the facts.",
+            "If realistic AI-generated or meaningfully altered people, places, or events are used, keep a disclosure check before publishing. Do not generate unauthorized celebrities, brands, or copyrighted assets.",
+            "",
+            "For each shot, use:",
+            "Shot 01 | duration | visual action | framing/camera | ambient sound/voiceover | on-screen text | connection to next shot",
+            "",
+            "Overall style: truthful, specific, restrained. Avoid empty cinematic filler, fake suspense, unverifiable details, and visual noise unrelated to the promise."
+          ].join("\n");
+        }
+        const lines = [
+          "YouTube 视频分镜 Prompt",
+          "",
+          `格式：${isShort ? "Shorts 竖屏" : "Long-form 横屏"}`,
+          `主题：${topic}`,
+          `目标观众：${audience}`,
+          `观众看完得到：${payoff}`,
+          `素材基础：${materials}`,
+          "",
+          "创作要求：",
+          isShort ? "请设计 4–6 个竖屏镜头，总时长约 20–45 秒。第一秒出现结果、反差或最有画面的动作；每个镜头都推动事件，不用片头、空泛介绍或无意义转场。" : "请设计 8–10 个镜头，先用真实现场或结果兑现标题与封面预期，再补充必要背景，之后用连续动作和细节推进，最后回到一个具体 payoff。",
+          `视觉锚点：${moment}`,
+          "保持人物、地点、时间、道具和光线的连续性；画面服务内容，不制造与事实不符的夸张场景。",
+          "如果使用真实感 AI 生成或重大修改的人物、地点、事件，保留发布前披露检查；不要生成未经授权的名人、品牌或受版权保护的素材。",
+          "",
+          "请按以下格式输出每个镜头：",
+          "Shot 01 | 时长 | 画面动作 | 景别/机位 | 环境声/旁白 | 屏幕文字 | 与下一镜头的连接",
+          "",
+          "整体风格：真实、具体、克制；避免电影化空镜堆砌、假悬念、不可验证的细节和与内容承诺无关的视觉噪音。"
+        ];
+        return lines.join("\n");
+      }
+      function downloadStoryboardPrompt(mode, data, button) {
+        const suffix = language === "en" ? "-en" : "";
+        const filename = mode === "short" ? `youtube-shorts-storyboard-prompt${suffix}.txt` : `youtube-video-storyboard-prompt${suffix}.txt`;
+        const blob = new Blob([buildStoryboardPrompt(mode, data)], {type: "text/plain;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        button.textContent = pageCopy[language].downloaded;
+        setTimeout(function () { button.textContent = pageCopy[language].download; }, 1500);
+      }
+
+      function englishResult(mode, data) {
+        if (mode === "new") {
+          const topic = val(data, "topic", "Your topic (to be added)");
+          return commonIntro("Start with why this video is worth watching", "Your topic is now a first promise chain and a practical working draft.") + `<div class="result-grid">` +
+            card("Content promise", `<p class="idea-line">For ${esc(val(data, "audience", "your target viewer"))}, use “${esc(topic)}” to deliver ${esc(val(data, "goal", "a clear, credible takeaway"))}.</p>${tags([["Topic: recorded","fact"],[`Audience: ${data.audience ? "recorded" : "add later"}`, data.audience ? "fact" : "unknown"],["Promise: first draft","inference"]])}`, "wide") +
+            card("Title × thumbnail direction", `<p><strong>Title:</strong> ${esc(topic)}: a real detail you may not have seen</p><p style="margin-top:8px"><strong>Thumbnail:</strong> one specific person or action as the subject; keep only enough location context in the background. Do not repeat the title as text.</p>${tags([["Promise alignment: validate with script","hypothesis"]])}`) +
+            card("Opening 0–15 seconds", `<p>Show a concrete scene or result first, then explain why it is worth watching. Skip channel introductions and broad background setup.</p>${tags([["Opening delivery: suggested","inference"]])}`) +
+            card("Working structure", `<ul><li>Scene / result: show what viewers are here to see</li><li>Context / person: add only what helps understanding</li><li>Process / change: move one question forward at a time</li><li>Return to the promise: close with a concrete payoff</li></ul>`) +
+            card("Before publishing", `<p>Confirm source, asset rights, people’s permissions, and whether realistic AI-generated or meaningfully altered content needs disclosure.</p>${tags([["Rights: unknown","unknown"],["Policy: review","hypothesis"]])}`) +
+            storyboardCard("new") +
+            action("Add one specific scene detail that represents the video, then move into script and shot planning.") + `</div>`;
+        }
+        if (mode === "short") {
+          const topic = val(data, "topic", "this moment");
+          const moment = val(data, "moment", "the most visual action or result");
+          return commonIntro("Find the shortest path for a Short", "Start with one moment, then use only enough context to deliver its payoff.") + `<div class="result-grid">` +
+            card("What happens in the first second", `<p class="idea-line">${esc(moment)}: ${esc(topic)}</p><p style="margin-top:8px">Start with the action or result, not a greeting, intro, or background explanation.</p>${tags([["Visual stop: suggested","inference"],[`Material: ${data.source ? "recorded" : "add later"}`, data.source ? "fact" : "unknown"]])}`, "wide") +
+            card("Pacing / voiceover", `<ul><li>0–1 sec: result or contrast</li><li>1–5 sec: one-line context</li><li>5–20 sec: move the action forward without repetition</li><li>End: ${esc(val(data, "payoff", "leave one specific detail in memory"))}</li></ul>`) +
+            card("Title and picture", `<p>The title says what it is; the picture shows why it is worth watching now. Avoid exaggerated words the footage cannot deliver.</p>${tags([["Promise alignment: validate with final cut","hypothesis"]])}`) +
+            card("Review before publishing", `<p>Confirm that the material is yours or licensed. If realistic AI-generated or altered people, places, or events are used, review the disclosure setting.</p>${tags([["Rights: unknown","unknown"],["AI disclosure: review by material","hypothesis"]])}`) +
+            storyboardCard("short") +
+            action("Cut a version containing only result → process → payoff, then decide whether more context is truly needed.") + `</div>`;
+        }
+        if (mode === "video") {
+          return commonIntro("Read what happened before guessing why", "Known facts stay separate from explanations and tests.") + `<div class="result-grid">` +
+            card("Recorded facts", `<p>${esc(val(data, "metrics", "Not enough data supplied yet"))}</p>${tags([["Data: recorded","fact"],["Time window: unknown","unknown"]])}`, "wide") +
+            card("First observation", `<p>If impressions exist but clicks are weak, check whether the title and thumbnail set a clear expectation. If viewers leave soon after clicking, check whether the opening delivers that expectation.</p>${tags([["Direction: inference","inference"]])}`) +
+            card("What is not proven", `<p>One snapshot cannot prove whether the cause is topic, packaging, opening, delivery, or competition. Your own note is: ${esc(val(data, "feeling", "no personal observation added"))}.</p>${tags([["Cause: to test","hypothesis"],["Comparison: unknown","unknown"]])}`) +
+            card("Smallest useful test", `<p>Choose one variable: title × thumbnail promise, time-to-delivery in the opening, or mid-video redundancy. Keep the rest comparable.</p>`) +
+            action("Add the time window, traffic sources, and key retention drop-offs before deciding whether to change packaging or the opening.") + `</div>`;
+        }
+        if (mode === "packaging") {
+          const promise = val(data, "promise", "the specific value viewers will receive");
+          const audience = val(data, "audience", "your target viewer");
+          return commonIntro("Three packaging directions to discuss", "Each direction pairs a title with a thumbnail so the promise stays connected.") + `<div class="result-grid">` +
+            card("A · Result first", `<p><strong>Title:</strong> ${esc(promise)}: what happened in the end?</p><p style="margin-top:8px"><strong>Thumbnail:</strong> enlarge the key object or expression from the result; keep the background simple.</p><p style="margin-top:8px"><strong>Best for:</strong> ${esc(audience)} already understands the broad topic but wants the result.</p>`, "wide") +
+            card("B · A live question", `<p><strong>Title:</strong> Why did ${esc(promise)} turn out this way?</p><p style="margin-top:8px"><strong>Thumbnail:</strong> one action plus one unexplained detail from the scene.</p>`) +
+            card("C · Specific contrast", `<p><strong>Title:</strong> A real scene changed how I understand ${esc(promise)}</p><p style="margin-top:8px"><strong>Thumbnail:</strong> before/after or a clear scale contrast; keep text to 3–5 words.</p>`) +
+            card("Consistency check", `<p>All three require the opening to answer why viewers clicked and what the video will deliver. If the body cannot deliver it, return to the promise.</p>${tags([["Promise: recorded","fact"],["Opening delivery: to test","hypothesis"]])}`) +
+            action("Choose A, B, or C, then write the scene or fact that can deliver it in the first 15 seconds.") + `</div>`;
+        }
+        if (mode === "channel") {
+          const niche = val(data, "niche", "Your channel topic (to be added)");
+          return commonIntro("See what your channel is becoming", "Separate the topics, packaging, and viewer experience that people have actually responded to.") + `<div class="result-grid">` +
+            card("Channel through-line", `<p class="idea-line">${esc(niche)}</p>${tags([["Positioning: recorded","fact"],["Viewer motive: to test","unknown"]])}`, "wide") +
+            card("Channel evidence supplied", `<p>${esc(val(data, "recent", "No recent video data supplied yet"))}</p>${tags([[data.recent ? "Data: recorded" : "Data: add later", data.recent ? "fact" : "unknown"]])}`) +
+            card("Pattern to examine", `<p>Compare packaging, opening, and delivery within the same traffic context. Do not equate view count with quality; topic interest and competition also affect reach.</p>${tags([["Explanation: inference","inference"]])}`) +
+            card("Next direction", `<p>Choose a topic cluster that already has viewer response and change one variable next: clearer packaging, earlier delivery, or a more specific angle.</p>${tags([["Action: suggested test","hypothesis"]])}`) +
+            action("Fill in 3–5 recent videos with topic, traffic source, impressions, clicks, retention, and comment signals for a stronger next decision.") + `</div>`;
+        }
+        const idea = val(data, "idea", "a next video worth testing");
+        return commonIntro("Choose one change for the next video", "Turn the review into one visible action that can be tested.") + `<div class="result-grid">` +
+          card("KEEP", `<p>${esc(val(data, "keep", "Not supplied yet; keep the parts viewers have already responded to"))}</p>${tags([["Basis: needs evidence","fact"]])}`) +
+          card("CHANGE", `<p>${esc(val(data, "change", "Find the largest problem that can actually be changed"))}</p>${tags([["Priority: first problem","inference"]])}`) +
+          card("TEST", `<p>Change one primary variable: ${esc(val(data, "change", "opening delivery time or title/thumbnail promise"))}. Keep other conditions comparable.</p>${tags([["Causality: not proven","hypothesis"]])}`) +
+          card("NEXT VIDEO", `<p class="idea-line">${esc(idea)}</p><p style="margin-top:8px">Constraint: ${esc(val(data, "constraint", "not supplied"))}</p>`, "wide") +
+          storyboardCard("next") +
+          action("Write TEST into the pre-shoot checklist and record the same comparison window after publishing.") + `</div>`;
+      }
+
+      function newResult(data) {
+        const topic = val(data, "topic", "你的主题（待补充）");
+        return commonIntro("这条视频先从“为什么值得看”开始", "已把主题整理成一条承诺链，下面是第一版工作草案。") + `<div class="result-grid">` +
+          card("内容承诺", `<p class="idea-line">让${esc(val(data, "audience", "目标观众"))}通过“${esc(topic)}”获得${esc(val(data, "goal", "一个清楚、可信的观看收获"))}。</p>${tags([["主题：已记录","fact"],[`观众：${data.audience ? "已记录" : "待补充"}`, data.audience ? "fact" : "unknown"],["承诺：第一版","inference"]])}`, "wide") +
+          card("标题 × 封面方向", `<p><strong>标题：</strong>${esc(topic)}：一个你可能没看见的真实细节</p><p style="margin-top:8px"><strong>封面：</strong>一个具体人物/动作占画面主体，背景只保留能说明地点的线索；文字不重复标题。</p>${tags([["承诺一致性：待脚本验证","hypothesis"]])}`) +
+          card("开头 0–15 秒", `<p>先给观众一个具体现场或结果，再说明“为什么这件事值得看”。不要先讲频道介绍或泛泛背景。</p>${tags([["开头兑现：建议","inference"]])}`) +
+          card("结构草案", `<ul><li>现场 / 结果：先让观众知道要看什么</li><li>背景 / 人物：只补充理解所需的信息</li><li>过程 / 变化：每段推进一个新问题</li><li>回到承诺：用具体细节完成兑现</li></ul>`) +
+          card("发布前需要确认", `<p>主题来源、素材权限、人物授权，以及是否存在需要披露的真实感 AI 生成或重大修改内容。</p>${tags([["版权：未知","unknown"],["政策：需复核","hypothesis"]])}`) +
+          storyboardCard("new") +
+          action("补充一个最能代表这条视频的现场细节，再进入脚本和镜头规划。") + `</div>`;
+      }
+
+      function shortResult(data) {
+        const topic = val(data, "topic", "这一瞬间");
+        const moment = val(data, "moment", "最有画面的动作或结果");
+        return commonIntro("Shorts 的最短路径", "先抓住一个瞬间，再用最少的上下文完成兑现。") + `<div class="result-grid">` +
+          card("第一秒要发生什么", `<p class="idea-line">${esc(moment)}：${esc(topic)}</p><p style="margin-top:8px">从动作或结果开始，不从问候、片头或背景介绍开始。</p>${tags([["视觉停留：建议","inference"],[`素材：${data.source ? "已记录" : "待补充"}`, data.source ? "fact" : "unknown"]])}`, "wide") +
+          card("节奏 / 旁白", `<ul><li>0–1 秒：结果或反差</li><li>1–5 秒：一句话交代情境</li><li>5–20 秒：动作推进，不重复解释</li><li>结尾：${esc(val(data, "payoff", "让观众记住一个具体细节"))}</li></ul>`) +
+          card("标题与画面", `<p>标题补充“这是什么”，画面展示“为什么现在要看”。避免用画面没有兑现的夸张词。</p>${tags([["承诺一致性：待成片验证","hypothesis"]])}`) +
+          card("需要确认", `<p>素材是否由你拍摄或获得可用授权；如果使用真实感 AI 生成/修改的人、地点或事件，发布前检查披露设置。</p>${tags([["权利：未知","unknown"],["AI 披露：按素材复核","hypothesis"]])}`) +
+          storyboardCard("short") +
+          action("先剪出一个只包含“结果 → 过程 → 兑现”的版本，再看是否还需要补充信息。") + `</div>`;
+      }
+
+      function videoResult(data) {
+        const metrics = val(data, "metrics", "尚未提供足够数据");
+        const feeling = val(data, "feeling", "你还没有写下主观感受");
+        return commonIntro("先看发生了什么，再猜为什么", "下面保留已知事实，并把解释放在“待验证”里。") + `<div class="result-grid">` +
+          card("已记录的事实", `<p>${esc(metrics)}</p>${tags([["数据：已记录","fact"],["时间窗口：未知","unknown"]])}`, "wide") +
+          card("第一层观察", `<p>如果有曝光但点击弱，先查看标题和封面是否让人形成清楚预期；如果点击后很快流失，先检查开头有没有马上兑现预期。</p>${tags([["方向：推断","inference"]])}`) +
+          card("还不能确定", `<p>单条数据不能证明是选题、包装、开头、内容交付还是外部竞争造成的。你写下的感受是：${esc(feeling)}。</p>${tags([["原因：待验证","hypothesis"],["缺少对照：未知","unknown"]])}`) +
+          card("最小测试", `<p>只选一个变量：标题×封面承诺、开头交付时间、或中段冗余。保留其他条件，给下一次比较留出清晰证据。</p>`) +
+          action("补充发布时间范围、流量来源和留存曲线中的关键拐点，再决定要改包装还是改开头。") + `</div>`;
+      }
+
+      function packagingResult(data) {
+        const promise = val(data, "promise", "观众看完会得到的具体价值");
+        const audience = val(data, "audience", "目标观众");
+        return commonIntro("三组可以直接讨论的包装方向", "每组都把标题和封面绑在一起，避免只改一句标题。") + `<div class="result-grid">` +
+          card("方案 A · 结果先行", `<p><strong>标题：</strong>${esc(promise)}：最后发生了什么？</p><p style="margin-top:8px"><strong>封面：</strong>把结果的关键物件或表情放大，背景极简。</p><p style="margin-top:8px"><strong>适合：</strong>${esc(audience)}已经知道大致主题，但想看结果。</p>`, "wide") +
+          card("方案 B · 现场问题", `<p><strong>标题：</strong>为什么${esc(promise)}会变成这样？</p><p style="margin-top:8px"><strong>封面：</strong>一个动作 + 一个未解释的现场细节。</p>`) +
+          card("方案 C · 具体反差", `<p><strong>标题：</strong>我用一个真实现场重新理解${esc(promise)}</p><p style="margin-top:8px"><strong>封面：</strong>前后对照或尺度反差，文字控制在 3–5 个字。</p>`) +
+          card("一致性检查", `<p>三组方案都要求开头在最前面回答：观众为什么点开、视频会交付什么。若正文无法兑现，就回到承诺重新修改。</p>${tags([["Promise：已记录","fact"],["开头兑现：待验证","hypothesis"]])}`) +
+          action("从 A/B/C 里选一组，写出开头 15 秒能兑现的画面或事实，再进入脚本。") + `</div>`;
+      }
+
+      function channelResult(data) {
+        const niche = val(data, "niche", "频道主题（待补充）");
+        return commonIntro("频道不是一个分数，而是一组回应", "先把观众已经回应的主题、包装和内容体验分开看。") + `<div class="result-grid">` +
+          card("频道主线", `<p class="idea-line">${esc(niche)}</p>${tags([["频道定位：已记录","fact"],["观众动机：待验证","unknown"]])}`, "wide") +
+          card("已提供的频道证据", `<p>${esc(val(data, "recent", "还没有提供最近视频数据"))}</p>${tags([[data.recent ? "数据：已记录" : "数据：待补充", data.recent ? "fact" : "unknown"]])}`) +
+          card("模式观察", `<p>优先比较相同流量来源下的包装、开头和内容兑现，不把播放量直接等同于质量。外部题材兴趣和竞争也会改变触达。</p>${tags([["解释：推断","inference"]])}`) +
+          card("下一步建议", `<p>挑一个已经出现观众回应的主题簇，只改变一个变量做下一条：更清楚的包装、提前的兑现或更具体的题材角度。</p>${tags([["动作：建议实验","hypothesis"]])}`) +
+          action("把最近 3–5 条视频按“主题 / 流量来源 / 曝光 / 点击 / 留存 / 评论信号”补齐，下一轮判断会更可靠。") + `</div>`;
+      }
+
+      function nextResult(data) {
+        const idea = val(data, "idea", "一个值得验证的下一条视频想法");
+        return commonIntro("下一条，只验证一个改变", "把复盘收敛为可以拍出来、看得见结果的动作。") + `<div class="result-grid">` +
+          card("KEEP · 保留", `<p>${esc(val(data, "keep", "尚未提供，先保留已被观众回应的部分"))}</p>${tags([["依据：需有数据支持","fact"]])}`) +
+          card("CHANGE · 改变", `<p>${esc(val(data, "change", "先找上一条最大且可修正的问题"))}</p>${tags([["优先级：第一问题","inference"]])}`) +
+          card("TEST · 测试", `<p>只改变一个主要变量：${esc(val(data, "change", "开头交付时间或标题封面承诺"))}。其余条件尽量保持可比。</p>${tags([["因果：尚未证明","hypothesis"]])}`) +
+          card("NEXT VIDEO · 下一条", `<p class="idea-line">${esc(idea)}</p><p style="margin-top:8px">约束：${esc(val(data, "constraint", "未提供"))}</p>`, "wide") +
+          storyboardCard("next") +
+          action("把 TEST 写进拍摄前检查表，发布后按同一窗口记录结果；没有足够数据时，先标记未知，不急着下结论。") + `</div>`;
+      }
+
+      function render(mode, data, options) {
+        const renderers = {new:newResult, short:shortResult, video:videoResult, packaging:packagingResult, channel:channelResult, next:nextResult};
+        const html = language === "en" ? englishResult(mode, data) : renderers[mode](data);
+        resultBody.innerHTML = html;
+        if (!options || options.recordRun !== false) {
+          if (!activeRun || activeRun.mode !== mode) startRun(mode);
+          activeRun.result_version += 1;
+          appendRunEvent("RESULT_VERSIONED", {status: "NEEDS_REVIEW", evidence: ["result:rendered"].concat(evidenceKeys(data)), next_action: "human_review", follow_up: "NOT_CREATED"});
+        }
+        if (MotionLayer && typeof MotionLayer.reveal === "function") {
+          MotionLayer.reveal(resultBody.querySelector(".result-intro"), {duration: .3});
+          MotionLayer.reveal(resultBody.querySelectorAll(".result-card"), {duration: .36, stagger: .04, delay: .04});
+        }
+        status.textContent = pageCopy[language].ready;
+        lastResultText = resultBody.innerText;
+        const copyButton = document.getElementById("copyResult");
+        if (copyButton) copyButton.addEventListener("click", function () {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(lastResultText).then(function () { copyButton.textContent = pageCopy[language].copied; setTimeout(function () { copyButton.textContent = pageCopy[language].copy; }, 1500); });
+          }
+        });
+        const storyboardButton = document.getElementById("downloadStoryboard");
+        if (storyboardButton) storyboardButton.addEventListener("click", function () { downloadStoryboardPrompt(mode, data, storyboardButton); });
+        resultBody.scrollIntoView({behavior:"smooth", block:"start"});
+      }
+
+      document.querySelectorAll(".mode-button").forEach(function (button) { button.addEventListener("click", function () { lastData = null; setMode(button.dataset.mode); }); });
+      languageToggle.addEventListener("click", function () {
+        const preserved = readFormData();
+        setLanguage(language === "zh" ? "en" : "zh");
+        setMode(currentMode, preserved, {startRun: false});
+        if (lastData) render(currentMode, lastData, {recordRun: false});
+      });
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!form.reportValidity()) return;
+        const data = Object.fromEntries(new FormData(form).entries());
+        if (!activeRun || activeRun.mode !== currentMode) startRun(currentMode);
+        appendRunEvent("EXECUTE_STARTED", {status: "RUNNING", evidence: evidenceKeys(data), next_action: "render_draft"});
+        const draftSaved = saveDraft(data);
+        appendRunEvent(draftSaved ? "DRAFT_SAVED" : "DRAFT_SAVE_FAILED", {status: draftSaved ? "RUNNING" : "NEEDS_REVIEW", evidence: [draftSaved ? "draft:localStorage" : "draft:save_failed"], next_action: draftSaved ? "render_draft" : "review_and_retry"});
+        lastData = data;
+        render(currentMode, data);
+      });
+      setLanguage("zh");
+      setMode("new");
+    }());
+  </script>
+</body>
+</html>
